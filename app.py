@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy # remember to point source towards virtualenv otherwise this wont be imported
 from send_email import send_email
+from sqlalchemy.sql import func
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -31,11 +32,14 @@ def success():
     if request.method=='POST':
         email=request.form["email_name"]
         height=request.form['height_name']
-        if db.session.query(Data).filter(Data.email==email):
+        if db.session.query(Data).filter(Data.email==email).count() == 0:
             data=Data(email, height)
             db.session.add(data)
             db.session.commit()
-            send_email(email, height)
+            average_height=db.session.query(func.avg(Data.height)).scalar()
+            average_height=round(average_height)
+            count=db.session.query(Data.height).count()
+            send_email(email, height, average_height, count)
             return render_template('success.html')
     return render_template('index.html', text='That email address has already submitted data to us')
 
