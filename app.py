@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
+from send_email import send_email
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -30,7 +31,13 @@ def success():
     if request.method=='POST':
         email=request.form["email_name"]
         height=request.form['height_name']
-    return render_template('success.html')
+        if db.session.query(Data).filter(Data.email==email):
+            data=Data(email, height)
+            db.session.add(data)
+            db.session.commit()
+            send_email(email, height)
+            return render_template('success.html')
+    return render_template('index.html', text='That email address has already submitted data to us')
 
 
 if __name__ == '__main__': #checks that the app is running and not being IMPORTED
